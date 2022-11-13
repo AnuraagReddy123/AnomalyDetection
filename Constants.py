@@ -1,0 +1,2 @@
+N_STATES = 2
+WINDOW_SIZE = 50

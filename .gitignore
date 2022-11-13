@@ -1,0 +1,11 @@
+venv/
+WADI/
+UCI/
+raw_data/
+__pycache__/
+
+# Ignore npy files
+*.npy
+
+# Ignore txt files
+*.txt
