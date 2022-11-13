@@ -61,7 +61,7 @@ def hmm_segmentation(data, window_size=1000, n_states=2):
     # Extracting the motifs
     motifs = []
     for segment in segments:
-        sample = data[segment[0]:segment[1]]
+        sample = data.iloc[segment[0]:segment[1]]
         motifs.append(sample)
     
     return decode_array, segments, motifs,HMM

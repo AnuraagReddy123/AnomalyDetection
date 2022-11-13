@@ -79,7 +79,6 @@ anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATA
 
 # Preprocess
 normal_data = preprocess_normal(normal_data)
-exit(0)
 
 sensors = normal_data.columns
 for sensor in sensors:
@@ -93,6 +92,4 @@ for sensor in sensors:
     signal = [x.to_numpy(dtype='float') for x in motifs]
     signal = np.array(signal, dtype='object')
     np.save(join(save_path, sensor), signal)
-
-
 

@@ -16,8 +16,5 @@ def preprocess_normal(dfn):
         for sensor in deleted_sensors:
             f.write(sensor + '\n')
 
-    # Remove all rows with nan
-    dfn = dfn.dropna(axis=0, how='any')
-
     print(dfn.shape)
     return dfn
