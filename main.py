@@ -121,6 +121,7 @@ anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATA
 # Preprocess
 normal_data, deleted_sensors = preprocess_normal(normal_data)
 
+print('Segmenting...')
 sensors = normal_data.columns
 for sensor in sensors:
     if sensor in ['Row', 'Date', 'Time']:
@@ -132,44 +133,59 @@ for sensor in sensors:
     decoded_array, segments, motifs, hmm_train = hmm_segmentation(normal_data[sensor], WINDOW_SIZE, N_STATES)
     signal = [x.to_numpy(dtype='float') for x in motifs]
     signal = np.array(signal, dtype='object')
+    if len(segments) == 0:
+        deleted_sensors.append(sensor)
+        normal_data.drop(sensor, axis=1, inplace=True)
+        continue
     np.save(join(save_path, sensor), signal)
 
 # Make dataset for each sensor
+print('Making datasets...')
+sensors = normal_data.columns
 for sensor in sensors:
     if sensor in ['Row', 'Date', 'Time']:
         continue
     print('Sensor: ', sensor)
     signal = np.load(join(save_path, sensor + '.npy'), allow_pickle=True)
     
-    X, y = make_dataset(signal, 'spike', ALPHA_SPIKE)
-    np.save(join(spike_path, sensor + '_dataset'), X)
-    np.save(join(spike_path, sensor + '_y'), y)
+    if not os.path.exists(join(spike_path, sensor + '_dataset.npy')):
+        X, y = make_dataset(signal, 'spike', ALPHA_SPIKE)
+        np.save(join(spike_path, sensor + '_dataset'), X)
+        np.save(join(spike_path, sensor + '_y'), y)
 
-    X, y = make_dataset(signal, 'pms', ALPHA_PMS)
-    np.save(join(pms_path, sensor + '_dataset'), X)
-    np.save(join(pms_path, sensor + '_y'), y)
+    if not os.path.exists(join(pms_path, sensor + '_dataset.npy')):
+        X, y = make_dataset(signal, 'pms', ALPHA_PMS)
+        np.save(join(pms_path, sensor + '_dataset'), X)
+        np.save(join(pms_path, sensor + '_y'), y)
 
-    X, y = make_dataset(signal, 'psd', ALPHA_PSD)
-    np.save(join(psd_path, sensor + '_dataset'), X)
-    np.save(join(psd_path, sensor + '_y'), y)
+    if not os.path.exists(join(psd_path, sensor + '_dataset.npy')):
+        X, y = make_dataset(signal, 'psd', ALPHA_PSD)
+        np.save(join(psd_path, sensor + '_dataset'), X)
+        np.save(join(psd_path, sensor + '_y'), y)
 
-    X, y = make_dataset(signal, 'ln', ALPHA_LN)
-    np.save(join(ln_path, sensor + '_dataset'), X)
-    np.save(join(ln_path, sensor + '_y'), y)
-
+    if not os.path.exists(join(ln_path, sensor + '_dataset.npy')):
+        X, y = make_dataset(signal, 'ln', ALPHA_LN)
+        np.save(join(ln_path, sensor + '_dataset'), X)
+        np.save(join(ln_path, sensor + '_y'), y)
 
 #_________________________________________Traning________________________________________________#
 
 # Build classifiers for each sensor and train
+print('Training...')
 for sensor in sensors:
     if sensor in ['Row', 'Date', 'Time']:
         continue
     print('Sensor: ', sensor)
     if not os.path.exists(join(spike_classifier_path, sensor + '.pkl')):
-        X = np.load(join(spike_path, sensor + '_dataset.npy'), allow_pickle=True)
+        x = np.load(join(spike_path, sensor + '_dataset.npy'), allow_pickle=True)
         y = np.load(join(spike_path, sensor + '_y.npy'), allow_pickle=True)
         clf = SpikeClassifier()
-        clf.fit(X, y)
+        clf.fit(x, y)
         joblib.dump(clf, join(spike_classifier_path, sensor + '.pkl'))
+        y_pred = clf.predict(x)
+        print(f'Accuracy: {accuracy_score(y, y_pred):.3f}')
+        print(f'Precision: {precision_score(y, y_pred):.3f}')
+        print(f'Recall: {recall_score(y, y_pred):.3f}')
+        print()
 
     

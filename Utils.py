@@ -16,5 +16,9 @@ def preprocess_normal(dfn):
         for sensor in deleted_sensors:
             f.write(sensor + '\n')
 
+    # Impute missing values with mean of before and after for each sensor
+    for col in dfn.columns:
+        dfn[col] = dfn[col].interpolate(method='linear', limit_direction='both')
+
     print(dfn.shape)
     return dfn, deleted_sensors
