@@ -1,26 +1,3 @@
-def preprocess_normal(dfn):
-    if (dfn.shape[0] <= 1):
-        print("Data not available!")
-        return
-    
-    # remove object & date column, time columns, Row column
-    non_numeric_col = ['Row']
-    non_numeric_colsn = list(dfn.select_dtypes(include = ['object','datetime64']).columns)
-    constant_colsn = dfn.columns[(dfn.loc[0,dfn.columns.tolist()]==dfn.loc[:,dfn.columns.tolist()]).all()]
-    colsn_0=constant_colsn[(dfn[constant_colsn]==0).all()].tolist()
-    constant_colsn = constant_colsn.tolist()
-
-    # rows with NAs are linearly interpolated
-    if dfn.shape[0]>1:  
-        remove_cols_nan = list(dfn.columns[(dfn.isna().sum()>(int(dfn.shape[0]/2)))])
-        dfn_fil = dfn.drop(columns = remove_cols_nan+non_numeric_colsn+non_numeric_col)
-        dfn_1 = dfn_fil.interpolate(method='linear')
-    
-    #min-max transformation if constant columns are not removed
-    dfn_2 = dfn_1.apply(lambda x: x if x.name in colsn_0 else ((x-0)/(x[0]-0) if x.name in constant_colsn else (x-x.min())/(x.max()-x.min())))
-
-    return dfn_2
-
 def hmm_segmentation(data, window_size=1000, n_states=2):
     
     '''
