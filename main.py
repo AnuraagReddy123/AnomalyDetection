@@ -26,8 +26,9 @@ from F13_PSDAnomalyGenerator import PSDAnomalyGenerator
 from F14_PSDFeature import PSDFeatures
 from F15_PSDClassifier import PSDClassifier
 from sklearn.ensemble import RandomForestClassifier
-from Segmenter import hmm_segmentation, preprocess_normal
+from Segmenter import hmm_segmentation
 from Constants import *
+from Utils import *
 
 join = os.path.join
 
@@ -69,17 +70,16 @@ if not os.path.exists(save_path):
 labels_array = np.array(anomaly_data['label'])
 anomalous_indices = np.where(labels_array == 1)[0]
 
-normal_data.columns = normal_data.columns.str.replace('\\', '')
+normal_data.columns = normal_data.columns.str.replace(r"\\", '', regex=True)
 normal_data.columns = normal_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASUTD_WADILOG_DATA', '')
-anomaly_data.columns = anomaly_data.columns.str.replace('\\', '')
+anomaly_data.columns = anomaly_data.columns.str.replace(r"\\", '', regex=True)
 anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASUTD_WADILOG_DATA', '')
 
 #_________________________________________Setup Code________________________________________________#
 
 # Preprocess
-normal_data = normal_data.loc[:, (normal_data != normal_data.iloc[0]).any()] # remove constant cols
-normal_data = normal_data.dropna(axis=1, how='all') # remove all nan cols
-print(normal_data.shape)
+normal_data = preprocess_normal(normal_data)
+exit(0)
 
 sensors = normal_data.columns
 for sensor in sensors:
