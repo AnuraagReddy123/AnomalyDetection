@@ -28,7 +28,6 @@ class SpikeFeature(BaseFeature):
                 F.append(result)
 
         F = np.array(F).reshape(-1, 1)
-        print(X.shape)
         means = np.zeros(X.shape[0])
         for i in range(X.shape[0]):
             means[i] = np.mean(X[i])

@@ -87,6 +87,26 @@ ln_path = join(os.getcwd(), 'WADI', 'Datasets', 'LN')
 if not os.path.exists(ln_path):
     os.mkdir(ln_path)
 
+classifier_path = join(os.getcwd(), 'WADI', 'Classifiers')
+if not os.path.exists(classifier_path):
+    os.mkdir(classifier_path)
+
+spike_classifier_path = join(os.getcwd(), 'WADI', 'Classifiers', 'Spike')
+if not os.path.exists(spike_classifier_path):
+    os.mkdir(spike_classifier_path)
+
+pms_classifier_path = join(os.getcwd(), 'WADI', 'Classifiers', 'PMS')
+if not os.path.exists(pms_classifier_path):
+    os.mkdir(pms_classifier_path)
+
+psd_classifier_path = join(os.getcwd(), 'WADI', 'Classifiers', 'PSD')
+if not os.path.exists(psd_classifier_path):
+    os.mkdir(psd_classifier_path)
+
+ln_classifier_path = join(os.getcwd(), 'WADI', 'Classifiers', 'LN')
+if not os.path.exists(ln_classifier_path):
+    os.mkdir(ln_classifier_path)
+
 labels_array = np.array(anomaly_data['label'])
 anomalous_indices = np.where(labels_array == 1)[0]
 
@@ -119,10 +139,37 @@ for sensor in sensors:
     if sensor in ['Row', 'Date', 'Time']:
         continue
     print('Sensor: ', sensor)
-    # if file exists then skip
-    if os.path.exists(join(spike_path, sensor + '.npy')):
-        continue
     signal = np.load(join(save_path, sensor + '.npy'), allow_pickle=True)
-    X, y = make_dataset(signal, 'spike', 0.1)
+    
+    X, y = make_dataset(signal, 'spike', ALPHA_SPIKE)
     np.save(join(spike_path, sensor + '_dataset'), X)
     np.save(join(spike_path, sensor + '_y'), y)
+
+    X, y = make_dataset(signal, 'pms', ALPHA_PMS)
+    np.save(join(pms_path, sensor + '_dataset'), X)
+    np.save(join(pms_path, sensor + '_y'), y)
+
+    X, y = make_dataset(signal, 'psd', ALPHA_PSD)
+    np.save(join(psd_path, sensor + '_dataset'), X)
+    np.save(join(psd_path, sensor + '_y'), y)
+
+    X, y = make_dataset(signal, 'ln', ALPHA_LN)
+    np.save(join(ln_path, sensor + '_dataset'), X)
+    np.save(join(ln_path, sensor + '_y'), y)
+
+
+#_________________________________________Traning________________________________________________#
+
+# Build classifiers for each sensor and train
+for sensor in sensors:
+    if sensor in ['Row', 'Date', 'Time']:
+        continue
+    print('Sensor: ', sensor)
+    if not os.path.exists(join(spike_classifier_path, sensor + '.pkl')):
+        X = np.load(join(spike_path, sensor + '_dataset.npy'), allow_pickle=True)
+        y = np.load(join(spike_path, sensor + '_y.npy'), allow_pickle=True)
+        clf = SpikeClassifier()
+        clf.fit(X, y)
+        joblib.dump(clf, join(spike_classifier_path, sensor + '.pkl'))
+
+    
