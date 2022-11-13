@@ -17,4 +17,4 @@ def preprocess_normal(dfn):
             f.write(sensor + '\n')
 
     print(dfn.shape)
-    return dfn
+    return dfn, deleted_sensors

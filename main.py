@@ -67,6 +67,26 @@ save_path = join(os.getcwd(), 'WADI', 'Sensors')
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 
+data_path = join(os.getcwd(), 'WADI', 'Datasets')
+if not os.path.exists(data_path):
+    os.mkdir(data_path)
+
+spike_path = join(os.getcwd(), 'WADI', 'Datasets', 'Spike')
+if not os.path.exists(spike_path):
+    os.mkdir(spike_path)
+
+pms_path = join(os.getcwd(), 'WADI', 'Datasets', 'PMS')
+if not os.path.exists(pms_path):
+    os.mkdir(pms_path)
+
+psd_path = join(os.getcwd(), 'WADI', 'Datasets', 'PSD')
+if not os.path.exists(psd_path):
+    os.mkdir(psd_path)
+
+ln_path = join(os.getcwd(), 'WADI', 'Datasets', 'LN')
+if not os.path.exists(ln_path):
+    os.mkdir(ln_path)
+
 labels_array = np.array(anomaly_data['label'])
 anomalous_indices = np.where(labels_array == 1)[0]
 
@@ -75,10 +95,11 @@ normal_data.columns = normal_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASU
 anomaly_data.columns = anomaly_data.columns.str.replace(r"\\", '', regex=True)
 anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASUTD_WADILOG_DATA', '')
 
-#_________________________________________Setup Code________________________________________________#
+
+#_________________________________________Data Creation________________________________________________#
 
 # Preprocess
-normal_data = preprocess_normal(normal_data)
+normal_data, deleted_sensors = preprocess_normal(normal_data)
 
 sensors = normal_data.columns
 for sensor in sensors:
@@ -93,3 +114,15 @@ for sensor in sensors:
     signal = np.array(signal, dtype='object')
     np.save(join(save_path, sensor), signal)
 
+# Make dataset for each sensor
+for sensor in sensors:
+    if sensor in ['Row', 'Date', 'Time']:
+        continue
+    print('Sensor: ', sensor)
+    # if file exists then skip
+    if os.path.exists(join(spike_path, sensor + '.npy')):
+        continue
+    signal = np.load(join(save_path, sensor + '.npy'), allow_pickle=True)
+    X, y = make_dataset(signal, 'spike', 0.1)
+    np.save(join(spike_path, sensor + '_dataset'), X)
+    np.save(join(spike_path, sensor + '_y'), y)
