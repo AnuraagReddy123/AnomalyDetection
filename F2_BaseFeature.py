@@ -1,5 +1,7 @@
+import Constants
+
 class BaseFeature:
-    def __init__(self, prominence=0.01, cutoff_param=0.4, n_coeff=15):
+    def __init__(self, prominence=0.01, cutoff_param=0.4, n_coeff=Constants.N_COEFF):
         self.prominence = prominence
         self.cutoff_param = cutoff_param
         self.n_coeff = n_coeff
