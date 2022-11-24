@@ -8,6 +8,7 @@ import sys
 import joblib
 import matplotlib.pyplot as plt
 import pickle
+import subprocess
 
 from F16_AnomalyHandler import AnomalyHandler
 from F1_BaseAnomalyGenerator import BaseAnomalyGenerator
@@ -31,6 +32,22 @@ import Constants
 from Utils import *
 
 join = os.path.join
+
+import subprocess
+import sys
+import os
+
+
+def run(cmd):
+    os.environ['PYTHONUNBUFFERED'] = "1"
+    proc = subprocess.Popen(cmd,
+        stdout = subprocess.PIPE,
+        stderr = subprocess.STDOUT,
+    )
+    stdout, stderr = proc.communicate()
+
+    return proc.returncode, stdout, stderr
+
 
 # Make dataset for each given sensor
 def make_dataset(sensor, anomaly_type, alpha):
@@ -122,28 +139,23 @@ anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATA
 normal_data, deleted_sensors = preprocess_normal(normal_data)
 
 print('-----------------Segmenting-----------------')
-sensors = normal_data.columns
-for sensor in sensors:
-    if sensor in ['Row', 'Date', 'Time']:
-        continue
-    print('Sensor: ', sensor)
-    # if file exists then skip
-    if os.path.exists(join(save_path, sensor + '.npy')):
-        continue
-    decoded_array, segments, motifs, hmm_train = hmm_segmentation(normal_data[sensor], Constants.WINDOW_SIZE, Constants.N_STATES)
-    signal = [x.to_numpy(dtype='float') for x in motifs]
-    signal = np.array(signal, dtype='object')
-    if len(segments) == 0:
-        deleted_sensors.append(sensor)
-        normal_data.drop(sensor, axis=1, inplace=True)
-        continue
 
-    # If segment length is less than Constants.N_COEFF then delete that segment
-    # for i in range(len(signal)):
-    #     if len(signal[i]) < Constants.N_COEFF:
-    #         signal = np.delete(signal, i, axis=0)
-    
-    np.save(join(save_path, sensor), signal)
+# Get the output of the subprocess Segmenter.py and store it in log.txt
+if len(os.listdir(save_path)) == 0:
+    code, out, err = run([sys.executable, 'Segmenter.py'])
+    # Write out to log.txt
+    with open('log.txt', 'w') as f:
+        f.write(out.decode())
+
+# Call subprocess on parse_problem_sensors.py
+subprocess.call(['python', 'Parse_Problem_Sensors.py'])
+
+# Load problem sensors and append to deleted sensors
+with open('problem_sensors.txt', 'r') as f:
+    for line in f:
+        deleted_sensors.append(line[9:-1])
+        normal_data = normal_data.drop(line[9:-1], axis=1)
+
 
 # Make dataset for each sensor
 print('-----------------Making Datasets-----------------')
@@ -189,11 +201,14 @@ for sensor in sensors:
         clf.fit(x, y)
         joblib.dump(clf, join(spike_classifier_path, sensor + '.pkl'))
         y_pred = clf.predict(x)
+        # Write metrics in file
         print('Spike')
-        print(f'Accuracy: {accuracy_score(y, y_pred):.3f}')
-        print(f'Precision: {precision_score(y, y_pred):.3f}')
-        print(f'Recall: {recall_score(y, y_pred):.3f}')
-        print()
+        with open (join('WADI', 'Accuracies', 'Spike.txt') , 'a') as f:
+            f.write('Sensor: ' + sensor + '\n')
+            f.write('Accuracy: ' + str(accuracy_score(y, y_pred)) + '\n')
+            f.write('Precision: ' + str(precision_score(y, y_pred)) + '\n')
+            f.write('Recall: ' + str(recall_score(y, y_pred)) + '\n')
+            f.write('\n')
 
     if not os.path.exists(join(pms_classifier_path, sensor + '.pkl')):
         x = np.load(join(pms_path, sensor + '_dataset.npy'), allow_pickle=True)
@@ -203,11 +218,14 @@ for sensor in sensors:
         clf.fit(x, y)
         joblib.dump(clf, join(pms_classifier_path, sensor + '.pkl'))
         y_pred = clf.predict(x)
+        # Write metrics in file
         print('PMS')
-        print(f'Accuracy: {accuracy_score(y, y_pred):.3f}')
-        print(f'Precision: {precision_score(y, y_pred):.3f}')
-        print(f'Recall: {recall_score(y, y_pred):.3f}')
-        print()
+        with open (join('WADI', 'Accuracies', 'PMS.txt') , 'a') as f:
+            f.write('Sensor: ' + sensor + '\n')
+            f.write('Accuracy: ' + str(accuracy_score(y, y_pred)) + '\n')
+            f.write('Precision: ' + str(precision_score(y, y_pred)) + '\n')
+            f.write('Recall: ' + str(recall_score(y, y_pred)) + '\n')
+            f.write('\n')
     
     # if not os.path.exists(join(psd_classifier_path, sensor + '.pkl')):
     #     x = np.load(join(psd_path, sensor + '_dataset.npy'), allow_pickle=True)

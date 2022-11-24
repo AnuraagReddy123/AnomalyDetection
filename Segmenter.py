@@ -1,3 +1,11 @@
+import os
+from Utils import *
+import pickle
+import numpy as np
+import Constants
+
+join = os.path.join
+
 def hmm_segmentation(data, window_size=1000, n_states=2):
     
     '''
@@ -65,3 +73,44 @@ def hmm_segmentation(data, window_size=1000, n_states=2):
         motifs.append(sample)
     
     return decode_array, segments, motifs,HMM
+
+if __name__ == '__main__':
+    save_path = join(os.getcwd(), 'WADI', 'Sensors')
+    if not os.path.exists(save_path):
+        os.mkdir(save_path)
+    raw_data_path = join(os.getcwd(), 'WADI')
+    normal_data = pickle.load(open(join(raw_data_path, 'dfn_wadi_pp.pkl'), 'rb'))
+    anomaly_data = pickle.load(open(join(raw_data_path, 'dfa_wadi_pp.pkl'), 'rb'))
+    normal_data.columns = normal_data.columns.str.replace(r"\\", '', regex=True)
+    normal_data.columns = normal_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASUTD_WADILOG_DATA', '')
+    anomaly_data.columns = anomaly_data.columns.str.replace(r"\\", '', regex=True)
+    anomaly_data.columns = anomaly_data.columns.str.replace('WIN-25J4RO10SBFLOG_DATASUTD_WADILOG_DATA', '')
+
+
+    #_________________________________________Data Creation________________________________________________#
+
+    # Preprocess
+    normal_data, deleted_sensors = preprocess_normal(normal_data)
+
+    # If sensor directory exists then skip
+    sensors = normal_data.columns
+    for sensor in sensors:
+        if sensor in ['Row', 'Date', 'Time']:
+            continue
+        print('Sensor: ', sensor)
+        
+        decoded_array, segments, motifs, hmm_train = hmm_segmentation(normal_data[sensor], Constants.WINDOW_SIZE, Constants.N_STATES)
+        signal = [x.to_numpy(dtype='float') for x in motifs]
+        signal = np.array(signal, dtype='object')
+        if len(segments) == 0:
+            deleted_sensors.append(sensor)
+            normal_data.drop(sensor, axis=1, inplace=True)
+            print('Length of segments is 0')
+            continue
+
+        # If segment length is less than Constants.N_COEFF then delete that segment
+        # for i in range(len(signal)):
+        #     if len(signal[i]) < Constants.N_COEFF:
+        #         signal = np.delete(signal, i, axis=0)
+        
+        np.save(join(save_path, sensor), signal)

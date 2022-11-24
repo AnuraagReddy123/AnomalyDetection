@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import skew , kurtosis
 from F2_BaseFeature import BaseFeature
+from Utils import nan_helper
 
 
 class PMSFeature(BaseFeature):
@@ -48,11 +49,12 @@ class PMSFeature(BaseFeature):
                     X_fft,
                     X_pow.reshape(-1,1))
 
-        # Check for nan values
-        for feature in features:
-            if np.isnan(feature).any():
-                print("Nan values found in feature")
-                exit(0)
+        features = np.concatenate(features,axis=1)
 
+        # Interpolate nan values across row
 
-        return np.concatenate(features,axis=1)
+        for i in range(features.shape[0]):
+            nans, x= nan_helper(features[i,:])
+            features[i,nans]=np.interp(x(nans), x(~nans), features[i, ~nans])
+
+        return features

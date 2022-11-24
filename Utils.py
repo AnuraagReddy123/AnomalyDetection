@@ -1,4 +1,5 @@
 import os
+import numpy as np
 join = os.path.join
 
 def preprocess_normal(dfn):
@@ -19,6 +20,7 @@ def preprocess_normal(dfn):
     # Impute missing values with mean of before and after for each sensor
     for col in dfn.columns:
         dfn[col] = dfn[col].interpolate(method='linear', limit_direction='both')
-
-    print(dfn.shape)
     return dfn, deleted_sensors
+
+def nan_helper(y):
+    return np.isnan(y), lambda z: z.nonzero()[0]
